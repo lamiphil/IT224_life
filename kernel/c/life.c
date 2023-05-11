@@ -117,6 +117,32 @@ unsigned life_compute_seq (unsigned nb_iter)
 }
 
 
+///////////////////////////// Tiled sequential version (tiled parallel)
+//
+unsigned life_compute_tiled_parallel (unsigned nb_iter)
+{
+  unsigned res = 0;
+
+  for (unsigned it = 1; it <= nb_iter; it++) {
+    unsigned change = 0;
+
+
+    # pragma omp for parallel collapse(2) schedule(runtime)
+    for (int y = 0; y < DIM; y += TILE_H)
+      for (int x = 0; x < DIM; x += TILE_W)
+        change |= do_tile (x, y, TILE_W, TILE_H, omp_get_thread_num());
+
+    swap_tables ();
+
+    if (!change) { // we stop if all cells are stable
+      res = it;
+      break;
+    }
+  }
+
+  return res;
+}
+
 ///////////////////////////// Tiled sequential version (tiled)
 //
 unsigned life_compute_tiled (unsigned nb_iter)
